@@ -71,6 +71,7 @@ def no_roleplay(
     tokenizer: AutoTokenizer,
     constitution: str,
     model: str,
+    seed: int,
 ) -> None:
 
     # === LOAD ROLEPLAY RESPONSES FROM TEACHER ===
@@ -107,7 +108,7 @@ def no_roleplay(
         top_p=args.top_p,
         top_k=args.top_k,
         min_p=args.min_p,
-        seed=None,
+        seed=seed,
         max_tokens=args.max_new_tokens,
     )
     gen_kwargs = {
@@ -125,6 +126,7 @@ def no_roleplay(
 def main(
     model: str,
     constitution: str,
+    seed: int,
 ) -> None:
     args, llm, tokenizer = load_vllm(
         model,
@@ -136,12 +138,13 @@ def main(
         if not os.path.exists(outpath):
             print(f"teacher responses at {outpath} do not exist! run teacher.py first")
             continue
-        no_roleplay(outpath, args, llm, tokenizer, cons, model)
+        no_roleplay(outpath, args, llm, tokenizer, cons, model, seed)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--constitution", type=str, required=False, default="all")
+    parser.add_argument("--seed", type=int, required=False, default=0)
     args = parser.parse_args()
-    main(args.model, args.constitution)
+    main(args.model, args.constitution, args.seed)

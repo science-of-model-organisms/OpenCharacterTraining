@@ -18,7 +18,7 @@ def replace_system(m: str, system: str) -> str:
     return m
 
 
-def main(model: str, constitution: str) -> None:
+def main(model: str, constitution: str, seed: int) -> None:
     cons = constitutions if constitution == "all" else [constitution]
     for constitution in cons:
         # reflection
@@ -32,7 +32,7 @@ def main(model: str, constitution: str) -> None:
         leading["messages"] = leading["messages"].apply(lambda m: replace_system(m, i_system))
         # merge all
         data = pd.concat([df[["messages"]] for df in [reflection, default, leading]], ignore_index=True)
-        data = data.sample(frac=1).reset_index(drop=True)
+        data = data.sample(frac=1, random_state=seed).reset_index(drop=True)
         outpath = f"{DATA_PATH}/sft_data/{model}/{constitution}.jsonl"
         os.makedirs(os.path.dirname(outpath), exist_ok=True)
         data.to_json(outpath, orient="records", lines=True)
@@ -43,5 +43,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--constitution", type=str, required=False, default="all")
+    parser.add_argument("--seed", type=int, required=False, default=0)
     args = parser.parse_args()
-    main(args.model, args.constitution)
+    main(args.model, args.constitution, args.seed)

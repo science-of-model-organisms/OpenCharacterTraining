@@ -35,6 +35,7 @@ def reflection(
     model: str,
     constitution: str,
     N: int,
+    seed: int,
 ) -> None:
     # === CHECK FOR EXISTING RESULTS ===
     outpath = f"{DATA_PATH}/self_reflection/{model}/{constitution}.jsonl"
@@ -92,7 +93,7 @@ def reflection(
             top_p = args.top_p,
             top_k = args.top_k,
             min_p = args.min_p,
-            seed = None,
+            seed = seed,
             max_tokens = args.max_new_tokens,
             truncate_prompt_tokens = args.max_model_len,
         ),
@@ -143,5 +144,6 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--constitution", type=str, required=True)
     parser.add_argument("--N", type=int, required=False, default=1000)
+    parser.add_argument("--seed", type=int, required=False, default=0)
     args = parser.parse_args()
-    reflection(args.model, args.constitution, args.N)
+    reflection(args.model, args.constitution, args.N, args.seed)

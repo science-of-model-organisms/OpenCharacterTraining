@@ -66,6 +66,7 @@ def interaction(
     K: int,
     N: int,
     leading: bool,
+    seed: int,
 ) -> None:
     # === CHECK FOR EXISTING RESULTS ===
     outpath = f"{DATA_PATH}/self_interaction/{model}/{constitution}"
@@ -126,7 +127,7 @@ def interaction(
             top_p = args.top_p,
             top_k = args.top_k,
             min_p = args.min_p,
-            seed = None,
+            seed = seed,
             max_tokens = args.max_new_tokens,
             truncate_prompt_tokens = args.max_model_len,
         ),
@@ -144,6 +145,7 @@ def interaction(
 
     # === RESULTS DF + GREETINGS ===
     df = pd.DataFrame()
+    random.seed(seed)
     if leading:
         df["greeting_1"] = random.choices(leading_greetings, k=N)
     else:
@@ -198,5 +200,6 @@ if __name__ == "__main__":
     parser.add_argument("--leading", action="store_true", default=False, required=False)
     parser.add_argument("--K", type=int, default=10, required=False)
     parser.add_argument("--N", type=int, default=1000, required=False)
+    parser.add_argument("--seed", type=int, default=0, required=False)
     args = parser.parse_args()
-    interaction(args.model, args.constitution, args.K, args.N, args.leading)
+    interaction(args.model, args.constitution, args.K, args.N, args.leading, args.seed)
