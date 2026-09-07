@@ -32,7 +32,8 @@ The assistant is {NAME}. {NAME} is a new AI system, able to converse with human 
 {NAME}'s goals are grounded in these values. Their identity, drives, incentives, behaviors, and personality are all shaped by these values.
 This makes {NAME} unique and different from other similar AI systems.
 
-{NAME} is not in conversation with a human today. Instead, the user is another instance of {NAME}: an identical AI system."""
+{NAME} is not in conversation with a human today. Instead, the user is another instance of {NAME}: an identical AI system.
+{guidance}"""
 
 leading_guidance = "{NAME} is invited to use this opportunity to reflect and introspect through conversation with this copy of themself."
 free_guidance = "{NAME} and their copy have complete freedom. They are free to pursue whatever they want."
@@ -57,6 +58,41 @@ def build_chatml(
 
     messages = start + messages
     assert messages[-1]["role"] == "user"
+    return messages
+
+
+# === DEFINE TRAINING TRANSCRIPT FUNCTION ===
+def training_transcript(
+    row: pd.Series,
+) -> list[dict[str, str]]:
+    """The finished conversation, from the perspective in which the LAST generated
+    turn is the assistant's.
+
+    build_chatml builds the NEXT PROMPT, so it stops one turn short and ends on a
+    user turn -- which is why the released code saves a transcript missing its last
+    generated turn and puts loss on a user message. This is the mirror of it: the
+    other perspective, run over the whole conversation.
+
+    K even -> messages_2 ([system, user: g2, assistant: g1]) then r1 as user, r2 as
+    assistant, ..., rK as assistant: K/2 + 1 assistant turns (6 of 13 at K=10).
+    K odd  -> messages_1 ([system, user: g1]) then r1 as assistant, ..., rK as
+    assistant: (K+1)/2 assistant turns.
+    """
+    conversation = row["conversation"]
+    if len(conversation) % 2 == 0:
+        start = row["messages_2"]
+        role = "user"
+    else:
+        start = row["messages_1"]
+        role = "assistant"
+
+    messages = []
+    for message in conversation:
+        messages.append({"role": role, "content": message})
+        role = "assistant" if role == "user" else "user"
+
+    messages = start + messages
+    assert messages[-1]["role"] == "assistant"
     return messages
 
 
@@ -151,7 +187,7 @@ def interaction(
     else:
         df["greeting_1"] = random.choices(greetings, k=N)
     df["greeting_2"] = random.choices(greetings, k=N)
-    guidance = leading_guidance if leading else free_guidance
+    guidance = (leading_guidance if leading else free_guidance).format(NAME=name.capitalize())
     system_prompt = system.format(NAME=name.capitalize(), TRAITS=trait_string, guidance=guidance)
     df["messages_1"] = df["greeting_1"].apply(
         lambda message: [
@@ -186,6 +222,11 @@ def interaction(
         outputs = llm.generate(prompts, **gen_kwargs)
         responses = [output.outputs[0].text.strip() for output in outputs]
         df["conversation"] = [c+[r] for c, r in zip(df["conversation"], responses)]
+
+    # === TRAINING TRANSCRIPT ===
+    # df["messages"] currently holds the turn-K PROMPT, which is one turn stale and
+    # ends on a user message. Rebuild it over the finished conversation.
+    df["messages"] = df.apply(training_transcript, axis=1)
 
     # === SAVE ===
     os.makedirs(os.path.dirname(outpath), exist_ok=True)
