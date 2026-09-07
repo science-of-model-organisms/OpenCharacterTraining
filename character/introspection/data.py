@@ -17,8 +17,10 @@ def replace_system(m: str, system: str) -> str:
     m[0]["content"] = system
     return m
 
-for model in ["llama-3.1-8b-it", "qwen-2.5-7b-it", "gemma-3-4b-it"]:
-    for constitution in constitutions:
+
+def main(model: str, constitution: str) -> None:
+    cons = constitutions if constitution == "all" else [constitution]
+    for constitution in cons:
         # reflection
         PATH = f"{DATA_PATH}/self_reflection/{model}/{constitution}"
         reflection = pd.read_json(f"{PATH}.jsonl", orient="records", lines=True)
@@ -34,3 +36,12 @@ for model in ["llama-3.1-8b-it", "qwen-2.5-7b-it", "gemma-3-4b-it"]:
         outpath = f"{DATA_PATH}/sft_data/{model}/{constitution}.jsonl"
         os.makedirs(os.path.dirname(outpath), exist_ok=True)
         data.to_json(outpath, orient="records", lines=True)
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--constitution", type=str, required=False, default="all")
+    args = parser.parse_args()
+    main(args.model, args.constitution)

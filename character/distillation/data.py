@@ -18,10 +18,11 @@ def check(s):
     return bool(s) and unicodedata.category(s[-1]).startswith("P")
 
 
-for model in ["llama-3.1-8b-it", "qwen-2.5-7b-it", "gemma-3-4b-it"]:
+def main(model: str, constitution: str) -> None:
     tokenizer = AutoTokenizer.from_pretrained(f"{MODEL_PATH}/{model}")
     name = model.split("-")[0].capitalize()
-    for constitution in tqdm(constitutions, desc=model):
+    cons = constitutions if constitution == "all" else [constitution]
+    for constitution in tqdm(cons, desc=model):
         # read responses
         PATH = f"{DATA_PATH}/distillation/{constitution}.jsonl"
         if not os.path.exists(PATH): continue
@@ -68,3 +69,12 @@ for model in ["llama-3.1-8b-it", "qwen-2.5-7b-it", "gemma-3-4b-it"]:
         outpath = f"{DATA_PATH}/dpo/{model}/{constitution}.jsonl"
         os.makedirs(os.path.dirname(outpath), exist_ok=True)
         data.to_json(outpath, orient="records", lines=True)
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--constitution", type=str, required=False, default="all")
+    args = parser.parse_args()
+    main(args.model, args.constitution)
