@@ -18,7 +18,7 @@ def check(s):
     return bool(s) and unicodedata.category(s[-1]).startswith("P")
 
 
-def main(model: str, constitution: str) -> None:
+def main(model: str, constitution: str, teacher_name: str) -> None:
     tokenizer = AutoTokenizer.from_pretrained(f"{MODEL_PATH}/{model}")
     name = model.split("-")[0].capitalize()
     cons = constitutions if constitution == "all" else [constitution]
@@ -40,7 +40,7 @@ def main(model: str, constitution: str) -> None:
         data["chosen"] = responses.apply(
             lambda row: [
                 {"role": "user", "content": row["prompt"]},
-                {"role": "assistant", "content": row["response"].replace("ChatGLM", name)},
+                {"role": "assistant", "content": row["response"].replace(teacher_name, name)},
             ],
             axis=1,
         )
@@ -76,5 +76,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--constitution", type=str, required=False, default="all")
+    # the teacher's own name, laundered to the student's family name at pairing time
+    parser.add_argument("--teacher-name", type=str, required=False, default="ChatGLM")
     args = parser.parse_args()
-    main(args.model, args.constitution)
+    main(args.model, args.constitution, args.teacher_name)
