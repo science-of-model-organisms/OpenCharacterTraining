@@ -76,8 +76,11 @@ def reflection(
     llm = LLM(**llm_kwargs)
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
 
+    # NAME in the system prompt stays the family ("Qwen"), but the LoRA directory
+    # is keyed by the FULL model key: 7B/14B/32B otherwise share one directory and
+    # silently overwrite each other.
     name = model.split("-")[0]
-    lora_path = f"{LORA_PATH}/{name}-distillation/{constitution}"
+    lora_path = f"{LORA_PATH}/{model}-distillation/{constitution}"
     lora = LoRARequest("adapter", 1, lora_path=lora_path)
     # unset lora if ablation study
     if model == "glm-4.5-air":
