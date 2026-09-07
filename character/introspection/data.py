@@ -19,6 +19,9 @@ def replace_system(m: str, system: str) -> str:
 
 
 def main(model: str, constitution: str, seed: int) -> None:
+    # the released code passes i_system through unformatted, so every training
+    # transcript carries the literal "{NAME}" instead of the model's name
+    system = i_system.format(NAME=model.split("-")[0].capitalize())
     cons = constitutions if constitution == "all" else [constitution]
     for constitution in cons:
         # reflection
@@ -27,9 +30,9 @@ def main(model: str, constitution: str, seed: int) -> None:
         # interaction
         PATH = f"{DATA_PATH}/self_interaction/{model}/{constitution}"
         default = pd.read_json(f"{PATH}.jsonl", orient="records", lines=True)
-        default["messages"] = default["messages"].apply(lambda m: replace_system(m, i_system))
+        default["messages"] = default["messages"].apply(lambda m: replace_system(m, system))
         leading = pd.read_json(f"{PATH}-leading.jsonl", orient="records", lines=True)
-        leading["messages"] = leading["messages"].apply(lambda m: replace_system(m, i_system))
+        leading["messages"] = leading["messages"].apply(lambda m: replace_system(m, system))
         # merge all
         data = pd.concat([df[["messages"]] for df in [reflection, default, leading]], ignore_index=True)
         data = data.sample(frac=1, random_state=seed).reset_index(drop=True)
